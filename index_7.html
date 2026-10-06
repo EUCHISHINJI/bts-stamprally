@@ -1,0 +1,288 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+<title>BTS土佐 デジタルスタンプラリー</title>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<style>
+  :root{--ink:#1c2330;--navy:#1f3a5f;--accent:#c8502d;--paper:#f6f1e7;--card:#fffdf8;--line:#d9d0bf;--muted:#4a5260}
+  *{box-sizing:border-box}
+  body{margin:0;background:var(--paper);color:var(--ink);font-family:"Hiragino Kaku Gothic ProN","Noto Sans JP","Yu Gothic",sans-serif;line-height:1.6}
+  header{background:var(--navy);color:#fff;padding:18px 16px 16px}
+  header .kicker{font-size:13px;letter-spacing:.08em;opacity:.9}
+  header h1{margin:2px 0 0;font-size:22px;line-height:1.35}
+  main{max-width:480px;margin:0 auto;padding:16px}
+  .banner{border-radius:12px;padding:14px 16px;margin-bottom:14px;font-weight:700}
+  .banner.ok{background:#e7f1ea;color:#1f5f3a;border:1px solid #b9d9c3}
+  .banner.info{background:#eef2f7;color:var(--navy);border:1px solid #c9d4e3}
+  .banner.warn{background:#fbeee9;color:#8a3519;border:1px solid #efc6b7}
+  .banner small{display:block;font-weight:400;margin-top:4px}
+  .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin-bottom:14px}
+  .card h2{margin:0 0 10px;font-size:17px;color:var(--navy)}
+  .count{font-size:15px;margin-bottom:10px}
+  .count b{font-size:28px;color:var(--accent)}
+  .stamps{display:grid;grid-template-columns:repeat(5,minmax(0,1fr));gap:8px}
+  .stamp{aspect-ratio:1;border-radius:50%;border:2px dashed var(--line);display:flex;flex-direction:column;align-items:center;justify-content:center;font-size:10px;color:var(--muted);text-align:center;padding:4px;overflow:hidden}
+  .stamp.on{border:3px solid var(--accent);color:var(--accent);background:#fff;font-weight:700}
+  .stamp .n{font-size:18px;line-height:1.1}
+  .stamp.on{font-size:12px}
+  .hist{list-style:none;margin:0;padding:0}
+  .hist li{display:flex;justify-content:space-between;gap:8px;border-bottom:1px solid #eee5d3;padding:8px 0;font-size:14px}
+  .hist li:last-child{border-bottom:0}
+  .prize{text-align:center}
+  .prize .code{font-size:44px;font-weight:800;letter-spacing:.12em;color:var(--navy);margin:6px 0}
+  .prize .done{display:inline-block;background:#888;color:#fff;border-radius:999px;padding:4px 14px;font-weight:700}
+  .muted{color:var(--muted);font-size:13px}
+  label{display:block;font-size:13px;margin:10px 0 4px}
+  input{width:100%;padding:12px;border:1px solid var(--line);border-radius:10px;font-size:16px}
+  button{width:100%;min-height:48px;margin-top:10px;border:0;border-radius:10px;background:var(--navy);color:#fff;font-size:16px;font-weight:700}
+  button.sub{background:#fff;color:var(--navy);border:1px solid var(--navy)}
+  details summary{cursor:pointer;color:var(--navy);font-weight:700;font-size:14px}
+  ul.rules{padding-left:18px;margin:6px 0 0;font-size:13px}
+  #loading{text-align:center;padding:40px 0;color:var(--muted)}
+  .hidden{display:none}
+</style>
+</head>
+<body>
+<header>
+  <div class="kicker">BTS土佐 デジタルスタンプラリー</div>
+  <h1 id="eventName">スタンプラリー</h1>
+</header>
+<main>
+  <div id="loading">読み込み中…</div>
+  <div id="app" class="hidden">
+    <div id="banner"></div>
+
+    <section class="card">
+      <h2>あなたのスタンプ</h2>
+      <div class="count"><b id="count">0</b> / <span id="goal">5</span> 個</div>
+      <div class="stamps" id="stamps"></div>
+      <p class="muted" id="todayNote"></p>
+    </section>
+
+    <section class="card prize hidden" id="prizeCard">
+      <h2>景品引換番号</h2>
+      <div class="code" id="prizeCode">----</div>
+      <div id="prizeState"></div>
+      <p class="muted">BTS土佐の窓口でこの画面をスタッフにお見せください。<br>20歳以上の方に限ります（身分証明書をお持ちください）。<br>引換期限：<span id="deadline"></span>／景品の残り：<span id="remaining"></span>個</p>
+      <div id="staffBox">
+        <details>
+          <summary>スタッフ用：交換済みにする</summary>
+          <label for="pin">スタッフ暗証番号</label>
+          <input id="pin" type="password" inputmode="numeric" autocomplete="off">
+          <button type="button" id="redeemBtn">交換済みにする</button>
+          <p class="muted" id="redeemMsg"></p>
+        </details>
+      </div>
+    </section>
+
+    <section class="card">
+      <h2>スタンプの履歴</h2>
+      <ul class="hist" id="history"></ul>
+    </section>
+
+    <section class="card">
+      <details>
+        <summary>機種変更・履歴を消したときは（引継ぎコード）</summary>
+        <p class="muted">スタンプはこのスマホのブラウザに記録されています。下の引継ぎコードをスクリーンショットなどで保存しておくと、別のスマホやブラウザでも続きから集められます。</p>
+        <p>あなたの引継ぎコード：<b id="transferCode">（スタンプを1個押すと表示されます）</b></p>
+        <label for="restoreInput">引継ぎコードを入力して復元</label>
+        <input id="restoreInput" autocomplete="off" placeholder="例：ABCD2345">
+        <button type="button" class="sub" id="restoreBtn">復元する</button>
+        <p class="muted" id="restoreMsg"></p>
+      </details>
+    </section>
+
+    <section class="card">
+      <details>
+        <summary>ルール</summary>
+        <ul class="rules">
+          <li>協力店にあるQRコードをスマホのカメラで読み取るとスタンプが1個たまります。</li>
+          <li>同じお店でのスタンプは1日1個まで。別のお店なら同じ日でも、同じお店でも別の日なら押せます。</li>
+          <li>QRコードはスマホのカメラで読み取ってください（LINEアプリの中では記録できません）。</li>
+          <li>お店にいることを位置情報で確認します。位置情報の利用を許可してください（位置そのものは保存しません）。</li>
+          <li>商品の購入は必要ありません。</li>
+          <li>景品は先着順で、なくなり次第終了します。お一人さま1回限りです。</li>
+          <li>舟券の購入は20歳になってから。お酒はお持ち帰り後にお楽しみください。</li>
+          <li>不正な方法で集めたスタンプは無効とします。</li>
+        </ul>
+        <p class="muted">お問い合わせ：BTS土佐 0887-54-0555</p>
+        <p class="muted" id="pidTail"></p>
+      </details>
+    </section>
+  </div>
+</main>
+
+<script>
+  /* ▼ Apps ScriptのWebアプリURL（…/exec）に書き換える ▼ */
+  var API_URL = 'https://script.google.com/macros/s/AKfycbwTnTQV1PTeXxdY5t8Jt3dkBkFUaommbPUj2UUy2wJ8Z6AydBntlSbJF74EK7Z5TsD_/exec';
+  /* ▲ ここまで ▲ */
+
+  var STORE_CODE = (new URLSearchParams(location.search).get('s') || '').replace(/[^A-Za-z0-9]/g, '').slice(0, 20);
+
+  /* Apps Scriptとの通信（google.script.run と同じ書き方で使えるようにする） */
+  var google = { script: { run: (function () {
+    function runner(ok, ng) {
+      var r = {};
+      r.withSuccessHandler = function (f) { return runner(f, ng); };
+      r.withFailureHandler = function (f) { return runner(ok, f); };
+      ['apiStamp', 'apiStatus', 'apiRedeem', 'apiRestore'].forEach(function (fn) {
+        r[fn] = function () {
+          var args = Array.prototype.slice.call(arguments);
+          fetch(API_URL, { method: 'POST', body: JSON.stringify({ fn: fn, args: args }) })
+            .then(function (res) { return res.json(); })
+            .then(function (d) { if (ok) ok(d); })
+            .catch(function (e) { if (ng) ng(e); });
+        };
+      });
+      return r;
+    }
+    return runner(null, null);
+  })() } };
+  var KEY = 'btsRallyPid';
+  var state = null;
+
+  function newPid() {
+    var chars = 'ABCDEFGHJKLMNPQRSTUVWXYZabcdefghijkmnpqrstuvwxyz23456789';
+    var a = new Uint32Array(24);
+    (window.crypto || window.msCrypto).getRandomValues(a);
+    var s = '';
+    for (var i = 0; i < a.length; i++) s += chars[a[i] % chars.length];
+    return s;
+  }
+  /* 参加者IDは localStorage と Cookie の両方に保存し、どちらかが消えても復元する */
+  function readCookie() {
+    var m = document.cookie.match(new RegExp('(?:^|; )' + KEY + '=([A-Za-z0-9]+)'));
+    return m ? m[1] : null;
+  }
+  function saveBoth(pid) {
+    try { localStorage.setItem(KEY, pid); } catch (e) {}
+    try { document.cookie = KEY + '=' + pid + '; Max-Age=31536000; Path=/; SameSite=Lax; Secure'; } catch (e) {}
+  }
+  function getPid() {
+    var pid = null;
+    try { pid = localStorage.getItem(KEY); } catch (e) {}
+    if (!pid) pid = readCookie();
+    if (!pid) pid = newPid();
+    saveBoth(pid);
+    return pid;
+  }
+  function setPid(pid) { saveBoth(pid); }
+  function $(id) { return document.getElementById(id); }
+  function esc(s) { return String(s).replace(/[&<>"']/g, function (c) { return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
+  function md(d) { var p = String(d).split('-'); return p.length === 3 ? Number(p[1]) + '/' + Number(p[2]) : d; }
+
+  var MESSAGES = {
+    stamped: function (s) { return ['ok', 'スタンプを押しました！', s.storeName + ' でスタンプ1個ゲット。'] },
+    already_today: function (s) { return ['info', 'このお店では今日はもう押しています', '同じお店は1日1個までです。別のお店なら今日も押せます。'] },
+    already_achieved: function () { return ['info', 'スタンプは達成済みです', '下の引換番号をBTS土佐の窓口でお見せください。'] },
+    bad_store: function () { return ['warn', 'このQRコードは使えません', '協力店のQRコードを読み取ってください。'] },
+    not_started: function (s) { return ['warn', 'まだ開催前です', md(s.startDate) + 'からスタンプを押せます。'] },
+    ended: function () { return ['warn', 'スタンプラリーは終了しました', 'たくさんのご参加ありがとうございました。'] },
+    need_location: function () { return ['warn', '位置情報を確認できませんでした', 'お店にいることを確認するため、位置情報の利用を「許可」してください。許可したら下の「もう一度試す」を押してください。'] },
+    too_far: function (s) { return ['warn', 'お店から離れているようです', 'スタンプはお店の中（店舗から約' + s.radius + 'm以内）で押せます。お店に着いてから「もう一度試す」を押してください。'] },
+    status: function (s) { return s.count ? null : ['info', '協力店のQRコードを読み取ってください', 'スタンプを5個集めると、BTS土佐で景品と交換できます。'] }
+  };
+
+  function render(s) {
+    state = s;
+    $('loading').classList.add('hidden');
+    $('app').classList.remove('hidden');
+    if (!s || !s.ok) {
+      $('banner').innerHTML = '<div class="banner warn">エラーが発生しました<small>時間をおいて、もう一度お試しください。</small></div>';
+      return;
+    }
+    $('eventName').textContent = s.eventName;
+    var m = MESSAGES[s.result] ? MESSAGES[s.result](s) : null;
+    if (s.result === 'stamped' && s.count >= s.goal) m = ['ok', 'スタンプ' + s.goal + '個達成、おめでとうございます！', '下の引換番号をBTS土佐の窓口でお見せください。'];
+    $('banner').innerHTML = m ? '<div class="banner ' + m[0] + '">' + esc(m[1]) + '<small>' + esc(m[2]) + '</small></div>' : '';
+    if (s.result === 'need_location' || s.result === 'too_far') {
+      $('banner').innerHTML += '<button type="button" id="retryBtn">もう一度試す</button><p class="muted">位置情報の許可方法：iPhoneは「設定」→「プライバシーとセキュリティ」→「位置情報サービス」で、お使いのブラウザを「使用中のみ」に。Androidはアドレスバーの鍵マークから「位置情報」を許可。</p>';
+      $('retryBtn').addEventListener('click', load);
+    }
+
+    $('count').textContent = s.count;
+    $('goal').textContent = s.goal;
+    var html = '';
+    for (var i = 0; i < s.goal; i++) {
+      var h = s.history[i];
+      html += h ? '<div class="stamp on" title="' + esc(h.store) + '"><span class="n">' + (i + 1) + '</span>' + esc(md(h.date)) + '</div>'
+                : '<div class="stamp"><span class="n">' + (i + 1) + '</span></div>';
+    }
+    $('stamps').innerHTML = html;
+    $('todayNote').textContent = s.count >= s.goal ? '' : 'あと' + (s.goal - s.count) + '個で景品と交換できます。';
+
+    $('history').innerHTML = s.history.length
+      ? s.history.map(function (h) { return '<li><span>' + esc(md(h.date)) + '</span><span>' + esc(h.store) + '</span></li>'; }).join('')
+      : '<li class="muted">まだスタンプはありません</li>';
+
+    $('transferCode').textContent = s.transferCode || '（スタンプを1個押すと表示されます）';
+    $('pidTail').textContent = '参加者ID：…' + getPid().slice(-4);
+
+    var achieved = s.count >= s.goal && s.prizeCode;
+    $('prizeCard').classList.toggle('hidden', !achieved);
+    if (achieved) {
+      $('prizeCode').textContent = s.prizeCode;
+      $('deadline').textContent = md(s.exchangeDeadline);
+      $('remaining').textContent = s.prizeRemaining;
+      if (s.redeemedAt) {
+        $('prizeState').innerHTML = '<span class="done">交換済み（' + esc(s.redeemedAt) + '）</span>';
+        $('staffBox').classList.add('hidden');
+      } else if (s.prizeRemaining <= 0) {
+        $('prizeState').innerHTML = '<span class="done">景品はすべて終了しました</span>';
+        $('staffBox').classList.add('hidden');
+      } else {
+        $('prizeState').innerHTML = '';
+        $('staffBox').classList.remove('hidden');
+      }
+    }
+  }
+
+  function fail() { render({ ok: false }); }
+
+  function load() {
+    var pid = getPid();
+    if (/\bLine\//i.test(navigator.userAgent)) {
+      $('loading').classList.add('hidden');
+      $('app').classList.remove('hidden');
+      $('banner').innerHTML = '<div class="banner warn">LINEアプリの中では記録できません<small>画面右上（または下）のメニューから「ブラウザで開く」を選ぶか、スマホのカメラでQRコードを読み取ってください。</small></div>';
+      return;
+    }
+    if (!STORE_CODE) { google.script.run.withSuccessHandler(render).withFailureHandler(fail).apiStatus(pid); return; }
+    $('loading').textContent = '位置情報を確認しています…';
+    $('loading').classList.remove('hidden');
+    $('app').classList.add('hidden');
+    var send = function (geo) {
+      google.script.run.withSuccessHandler(render).withFailureHandler(fail).apiStamp(pid, STORE_CODE, geo);
+    };
+    if (!navigator.geolocation) { send(null); return; }
+    navigator.geolocation.getCurrentPosition(function (pos) {
+      send({ lat: pos.coords.latitude, lng: pos.coords.longitude, acc: pos.coords.accuracy });
+    }, function () { send(null); }, { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 });
+  }
+
+  $('redeemBtn').addEventListener('click', function () {
+    $('redeemMsg').textContent = '処理中…';
+    google.script.run.withSuccessHandler(function (r) {
+      if (r.ok) { render(r); $('redeemMsg').textContent = ''; return; }
+      var e = { bad_pin: '暗証番号が違います', already_redeemed: 'すでに交換済みです', sold_out: '景品の在庫がありません', not_achieved: 'まだ達成していません' };
+      $('redeemMsg').textContent = e[r.error] || 'エラーが発生しました';
+    }).withFailureHandler(function () { $('redeemMsg').textContent = 'エラーが発生しました'; })
+      .apiRedeem(getPid(), $('pin').value);
+  });
+
+  $('restoreBtn').addEventListener('click', function () {
+    $('restoreMsg').textContent = '確認中…';
+    google.script.run.withSuccessHandler(function (r) {
+      if (!r.ok) { $('restoreMsg').textContent = '引継ぎコードが見つかりません'; return; }
+      setPid(r.pid);
+      $('restoreMsg').textContent = '復元しました';
+      google.script.run.withSuccessHandler(render).withFailureHandler(fail).apiStatus(r.pid);
+    }).withFailureHandler(function () { $('restoreMsg').textContent = 'エラーが発生しました'; })
+      .apiRestore($('restoreInput').value);
+  });
+
+  load();
+</script>
+</body>
+</html>
