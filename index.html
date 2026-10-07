@@ -41,6 +41,14 @@
   ul.rules{padding-left:18px;margin:6px 0 0;font-size:13px}
   #loading{text-align:center;padding:40px 0;color:var(--muted)}
   .hidden{display:none}
+  .trivia{background:#fff8ec;border:1px solid #efd9b4;border-radius:14px;padding:14px 16px;margin-bottom:14px}
+  .trivia .lbl{font-size:12px;font-weight:700;letter-spacing:.08em;color:var(--accent)}
+  .trivia p{margin:4px 0 0;font-size:15px;line-height:1.7}
+  .gift{display:grid;grid-template-columns:repeat(2,minmax(0,1fr));gap:8px;margin:8px 0}
+  .gift div{border:1px solid var(--line);border-radius:10px;padding:10px;display:flex;flex-direction:column;align-items:center;gap:4px;text-align:center;font-size:13px;font-weight:700;color:var(--ink)}
+  .gift svg{color:var(--navy)}
+  .giftplus{display:flex;align-items:center;gap:8px;border:2px solid var(--accent);border-radius:10px;padding:10px 12px;font-weight:700}
+  .giftplus b{color:var(--accent);font-size:20px}
 </style>
 </head>
 <body>
@@ -52,12 +60,29 @@
   <div id="loading">読み込み中…</div>
   <div id="app" class="hidden">
     <div id="banner"></div>
+    <div class="trivia" id="triviaBox">
+      <div class="lbl">ボートレース豆知識</div>
+      <p id="triviaText"></p>
+    </div>
 
     <section class="card">
       <h2>あなたのスタンプ</h2>
       <div class="count"><b id="count">0</b> / <span id="goal">5</span> 個</div>
       <div class="stamps" id="stamps"></div>
       <p class="muted" id="todayNote"></p>
+    </section>
+
+    <section class="card" id="giftCard">
+      <h2>スタンプ5個でもらえる景品</h2>
+      <p style="margin:0;font-weight:700">高知の晩酌セット</p>
+      <div class="gift">
+        <div><svg width="26" height="60" viewBox="0 0 44 104" fill="none" stroke="currentColor" stroke-width="3"><path d="M16 2h12v18c0 6 12 12 12 24v54a4 4 0 0 1-4 4H8a4 4 0 0 1-4-4V44c0-12 12-18 12-24V2z"/><rect x="10" y="54" width="24" height="30" rx="2"/></svg>酔鯨 純米吟醸 吟麗 300ml</div>
+        <div><svg width="60" height="40" viewBox="0 0 104 70" fill="none" stroke="currentColor" stroke-width="3"><ellipse cx="28" cy="14" rx="24" ry="8"/><path d="M4 14v40c0 4.4 10.7 8 24 8s24-3.6 24-8V14"/><ellipse cx="76" cy="20" rx="24" ry="8"/><path d="M52 20v40c0 4.4 10.7 8 24 8s24-3.6 24-8V20"/></svg>一本釣りカツオの缶詰 2缶</div>
+        <div><svg width="24" height="60" viewBox="0 0 40 104" fill="none" stroke="currentColor" stroke-width="3"><rect x="14" y="2" width="12" height="10" rx="2"/><path d="M15 12v10c-6 4-11 10-11 18v58a4 4 0 0 0 4 4h24a4 4 0 0 0 4-4V40c0-8-5-14-11-18V12"/><circle cx="20" cy="66" r="9"/></svg>ぽん酢しょうゆ ゆずの村 500ml</div>
+        <div><svg width="48" height="60" viewBox="0 0 80 100" fill="none" stroke="currentColor" stroke-width="3"><path d="M8 8h64l-4 10 4 10v64a4 4 0 0 1-4 4H12a4 4 0 0 1-4-4V28l4-10z"/><path d="M26 52l8-10M38 60l10-14M30 70l12-6M46 48l6 10"/></svg>水車亭 塩けんぴ</div>
+      </div>
+      <div class="giftplus" style="margin-bottom:10px"><b>＋</b>舟券購入券 1,000円分</div>
+      <p class="muted" style="margin:0">先着30名さま・20歳以上の方に限ります。景品の残り：<b id="giftRemain">--</b>個<br>受け取り：BTS土佐 窓口（香南市赤岡町986-2）。セット内容は変更になる場合があります。</p>
     </section>
 
     <section class="card prize hidden" id="prizeCard">
@@ -184,6 +209,30 @@
     status: function (s) { return s.count ? null : ['info', '協力店のQRコードを読み取ってください', 'スタンプを5個集めると、BTS土佐で景品と交換できます。'] }
   };
 
+  var TRIVIA = [
+    'ボートレースは6艇で競います。1号艇から順に、白・黒・赤・青・黄・緑の色が決まっています。',
+    'コース1周は600m。3周して合計1,800mを走ります。',
+    '全国のボートレース場は24場。いちばん多いのは東京都と福岡県で、それぞれ3場あります。',
+    '日本で初めてボートレースが開かれたのは1952年、長崎県の大村。「ボートレース発祥の地」と呼ばれています。',
+    '四国のボートレース場は鳴門（徳島県）と丸亀（香川県）の2場です。',
+    'スタートは「フライングスタート」。大時計が0秒から1秒を指す間にスタートラインを通過します。早すぎるとフライング、遅すぎると出遅れで欠場です。',
+    'フライングや出遅れをした艇がからむ舟券は、全額返還されます。',
+    '勝ち方を表す「決まり手」は、逃げ・差し・まくり・まくり差し・抜き・恵まれの6種類です。',
+    '1〜3着を着順どおりに当てる「3連単」の組み合わせは120通り。着順を問わない「3連複」は20通りです。',
+    'ボートの最高速度は時速約80km。水面すれすれを走る選手の体感速度は、時速約120kmといわれています。',
+    'レースで使うモーターは、開催の前日に行う検査（前検）の抽選で決まります。',
+    'ボートレーサーの最低体重は、男子52kg・女子47kgと決められています。',
+    'ボートレーサーは福岡県柳川市の「ボートレーサー養成所」で1年間の訓練を受けてデビューします。',
+    '最高グレードのレース「SG」は、スペシャルグレードの略です。',
+    '年間王者を決める「グランプリ」は毎年12月。獲得賞金の上位18名だけが出場できます。',
+    '女子レーサーの年末の頂上決戦は「クイーンズクライマックス」。優勝戦は大みそかの12月31日です。',
+    '2026年8月、峰竜太選手がボートレースメモリアル（桐生）を制し、史上初のグランドスラムを達成しました。',
+    '2025年12月のグランプリ（住之江）は、桐生順平選手が8年ぶり2回目の優勝を飾りました。'
+  ];
+  function showTrivia() {
+    $('triviaText').textContent = TRIVIA[Math.floor(Math.random() * TRIVIA.length)];
+  }
+
   function render(s) {
     state = s;
     $('loading').classList.add('hidden');
@@ -193,6 +242,8 @@
       return;
     }
     $('eventName').textContent = s.eventName;
+    showTrivia();
+    $('giftRemain').textContent = s.prizeRemaining;
     var m = MESSAGES[s.result] ? MESSAGES[s.result](s) : null;
     if (s.result === 'stamped' && s.count >= s.goal) m = ['ok', 'スタンプ' + s.goal + '個達成、おめでとうございます！', '下の引換番号をBTS土佐の窓口でお見せください。'];
     $('banner').innerHTML = m ? '<div class="banner ' + m[0] + '">' + esc(m[1]) + '<small>' + esc(m[2]) + '</small></div>' : '';
