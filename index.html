@@ -233,6 +233,16 @@
     $('triviaText').textContent = TRIVIA[Math.floor(Math.random() * TRIVIA.length)];
   }
 
+  /* スプレッドシート「景品」シートの内容で景品欄を描き直す */
+  function renderPrize(p) {
+    var h = '<h2>' + esc(p.title || '景品') + '</h2>';
+    if (p.setName) h += '<p style="margin:0;font-weight:700">' + esc(p.setName) + '</p>';
+    if (p.items.length) h += '<div class="gift">' + p.items.map(function (it) { return '<div>' + esc(it) + '</div>'; }).join('') + '</div>';
+    p.extras.forEach(function (x) { h += '<div class="giftplus" style="margin-bottom:10px"><b>＋</b>' + esc(x) + '</div>'; });
+    h += '<p class="muted" style="margin:0">' + p.notes.map(esc).join('<br>') + (p.notes.length ? '<br>' : '') + '景品の残り：<b id="giftRemain">--</b>個</p>';
+    $('giftCard').innerHTML = h;
+  }
+
   function render(s) {
     state = s;
     $('loading').classList.add('hidden');
@@ -242,7 +252,8 @@
       return;
     }
     $('eventName').textContent = s.eventName;
-    showTrivia();
+    if (s.trivia) $('triviaText').textContent = s.trivia; else showTrivia();
+    if (s.prize) renderPrize(s.prize);
     $('giftRemain').textContent = s.prizeRemaining;
     var m = MESSAGES[s.result] ? MESSAGES[s.result](s) : null;
     if (s.result === 'stamped' && s.count >= s.goal) m = ['ok', 'スタンプ' + s.goal + '個達成、おめでとうございます！', '下の引換番号をBTS土佐の窓口でお見せください。'];
