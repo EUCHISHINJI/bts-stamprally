@@ -52,7 +52,7 @@
   .pz .nm{margin:6px 0 0;font-size:17px;font-weight:700;color:var(--ink)}
   .pz .ds{margin:4px 0 0;font-size:13px;color:var(--muted)}
   .pz .gift{margin:8px 0 0}
-  .pzgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px;margin:10px 0 0}
+  .pzgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px;margin:10px 0 12px}
   .pzgrid .pz{margin:0}
   .pzgrid .nm{font-size:15px}
   .pz ul{margin:8px 0 0;padding-left:18px;font-size:14px;font-weight:700;color:var(--ink)}
@@ -263,13 +263,13 @@
       var x = '<div class="pz' + (out ? ' out' : '') + '"><span class="badge">' + esc(g.label) + '</span>';
       if (g.name) x += '<p class="nm">' + esc(g.name) + '</p>';
       g.desc.forEach(function (d) { x += '<p class="ds">' + esc(d) + '</p>'; });
-      if (g.items.length) x += '<ul>' + g.items.map(function (it) { return '<li>' + esc(it) + '</li>'; }).join('') + '</ul>';
+      var all = g.items.concat(p.common || []);  /* 共通の品目も各セットに同じように並べる */
+      if (all.length) x += '<ul>' + all.map(function (it) { return '<li>' + esc(it) + '</li>'; }).join('') + '</ul>';
       if (out) x += '<p class="left">このセットは終了しました</p>';
       else if (g.remaining !== null && g.remaining !== undefined) x += '<p class="left">残り ' + esc(g.remaining) + ' 個</p>';
       return x + '</div>';
     }).join('') + '</div>';
-    if ((p.common || []).length) h += '<div class="pzcommon"><div class="h">' + (p.prizes.length > 1 ? 'どちらのセットにも付きます' : 'あわせてお渡しします') + '</div>' +
-      p.common.map(function (c) { return '<div><b>＋</b>' + esc(c) + '</div>'; }).join('') + '</div>';
+    if (!p.prizes.length && (p.common || []).length) h += '<ul>' + p.common.map(function (c) { return '<li>' + esc(c) + '</li>'; }).join('') + '</ul>';
     h += '<p class="muted" style="margin:0">' + p.notes.map(esc).join('<br>') + (p.notes.length ? '<br>' : '') + '景品の残り：<b id="giftRemain">' + esc(lastRemain) + '</b>個</p>';
     $('giftCard').innerHTML = h;
     renderSetPick();
