@@ -52,7 +52,18 @@
   .pz .nm{margin:6px 0 0;font-size:17px;font-weight:700;color:var(--ink)}
   .pz .ds{margin:4px 0 0;font-size:13px;color:var(--muted)}
   .pz .gift{margin:8px 0 0}
-  .pzand{text-align:center;color:var(--accent);font-weight:900;font-size:20px;line-height:1;margin:-4px 0}
+  .pzgrid{display:grid;grid-template-columns:repeat(auto-fit,minmax(140px,1fr));gap:8px;margin:10px 0 0}
+  .pzgrid .pz{margin:0}
+  .pzgrid .nm{font-size:15px}
+  .pz ul{margin:8px 0 0;padding-left:18px;font-size:14px;font-weight:700;color:var(--ink)}
+  .pz .left{margin:6px 0 0;font-size:12px;color:var(--muted)}
+  .pz.out{opacity:.5}
+  .pzcommon{border:2px solid var(--accent);border-radius:10px;padding:10px 12px;margin:8px 0 10px}
+  .pzcommon .h{font-size:12px;font-weight:700;color:var(--accent)}
+  .pzcommon div{font-weight:700;margin-top:2px}
+  .pzcommon b{color:var(--accent);margin-right:4px}
+  .setpick{display:flex;flex-wrap:wrap;gap:8px;margin:6px 0 8px}
+  .setpick label{display:flex;align-items:center;gap:6px;border:1px solid var(--line);border-radius:10px;padding:8px 12px;font-weight:700}
   .giftplus{display:flex;align-items:center;gap:8px;border:2px solid var(--accent);border-radius:10px;padding:10px 12px;font-weight:700}
   .giftplus b{color:var(--accent);font-size:20px}
 </style>
@@ -88,6 +99,8 @@
       <div id="staffBox">
         <details>
           <summary>スタッフ用：交換済みにする</summary>
+          <p class="muted" style="margin:6px 0 0">お客様が選んだセット</p>
+          <div class="setpick" id="setPick"></div>
           <label for="pin">スタッフ暗証番号</label>
           <input id="pin" type="password" inputmode="numeric" autocomplete="off">
           <button type="button" id="redeemBtn">交換済みにする</button>
@@ -231,25 +244,46 @@
   /* 景品欄（スプレッドシート「景品」シートの内容で描き直す。読み込み前はこの初期値） */
   var DEFAULT_PRIZE = {
     title: 'スタンプ5個でもらえる景品',
+    lead: ['AセットかBセットのどちらか1つを選べます。'],
     prizes: [
-      { label: '景品A', name: '高知の晩酌セット', items: ['酔鯨 純米吟醸 吟麗 300ml', '一本釣りカツオの缶詰 2缶', 'ぽん酢しょうゆ ゆずの村 500ml', '水車亭 塩けんぴ'], desc: [] },
-      { label: '景品B', name: '舟券購入券 1,000円分', items: [], desc: [] }
+      { label: 'Aセット', name: '高知の晩酌セット', items: ['酔鯨 純米吟醸 吟麗 300ml', '一本釣りカツオの缶詰 2缶'], desc: [], remaining: null },
+      { label: 'Bセット', name: '高知のおやつセット', items: ['水車亭 塩けんぴ'], desc: [], remaining: null }
     ],
-    notes: ['景品A・景品Bを両方お渡しします。', '先着30名さま・20歳以上の方に限ります。', '受け取り：BTS土佐 窓口（香南市赤岡町986-2）', 'セット内容は変更になる場合があります。']
+    common: ['舟券購入券 1,000円分', 'ぽん酢しょうゆ ゆずの村 500ml'],
+    notes: ['先着30名さま・20歳以上の方に限ります。', '受け取り：BTS土佐 窓口（香南市赤岡町986-2）', 'セット内容は変更になる場合があります。']
   };
-  var lastRemain = '--';
+  var lastRemain = '--', curPrize = DEFAULT_PRIZE;
   function renderPrize(p) {
     if (!p || !p.prizes) p = DEFAULT_PRIZE;
+    curPrize = p;
     var h = '<h2>' + esc(p.title || '景品') + '</h2>';
-    h += p.prizes.map(function (g) {
-      var x = '<div class="pz"><span class="badge">' + esc(g.label) + '</span>';
+    (p.lead || []).forEach(function (t) { h += '<p style="margin:0;font-weight:700">' + esc(t) + '</p>'; });
+    if (p.prizes.length) h += '<div class="pzgrid">' + p.prizes.map(function (g) {
+      var out = g.remaining === 0;
+      var x = '<div class="pz' + (out ? ' out' : '') + '"><span class="badge">' + esc(g.label) + '</span>';
       if (g.name) x += '<p class="nm">' + esc(g.name) + '</p>';
       g.desc.forEach(function (d) { x += '<p class="ds">' + esc(d) + '</p>'; });
-      if (g.items.length) x += '<div class="gift">' + g.items.map(function (it) { return '<div>' + esc(it) + '</div>'; }).join('') + '</div>';
+      if (g.items.length) x += '<ul>' + g.items.map(function (it) { return '<li>' + esc(it) + '</li>'; }).join('') + '</ul>';
+      if (out) x += '<p class="left">このセットは終了しました</p>';
+      else if (g.remaining !== null && g.remaining !== undefined) x += '<p class="left">残り ' + esc(g.remaining) + ' 個</p>';
       return x + '</div>';
-    }).join('');
+    }).join('') + '</div>';
+    if ((p.common || []).length) h += '<div class="pzcommon"><div class="h">' + (p.prizes.length > 1 ? 'どちらのセットにも付きます' : 'あわせてお渡しします') + '</div>' +
+      p.common.map(function (c) { return '<div><b>＋</b>' + esc(c) + '</div>'; }).join('') + '</div>';
     h += '<p class="muted" style="margin:0">' + p.notes.map(esc).join('<br>') + (p.notes.length ? '<br>' : '') + '景品の残り：<b id="giftRemain">' + esc(lastRemain) + '</b>個</p>';
     $('giftCard').innerHTML = h;
+    renderSetPick();
+  }
+  /* スタッフ用：お客様が選んだセットを選ぶ */
+  function renderSetPick() {
+    var box = $('setPick');
+    if (!box) return;
+    var sets = curPrize.prizes || [];
+    box.innerHTML = sets.map(function (g) {
+      var dis = g.remaining === 0 ? ' disabled' : '';
+      return '<label><input type="radio" name="setSel" value="' + esc(g.label) + '"' + dis + '>' + esc(g.label) + (dis ? '（終了）' : '') + '</label>';
+    }).join('');
+    box.classList.toggle('hidden', !sets.length);
   }
   renderPrize(DEFAULT_PRIZE);
 
@@ -298,7 +332,7 @@
       $('deadline').textContent = md(s.exchangeDeadline);
       $('remaining').textContent = s.prizeRemaining;
       if (s.redeemedAt) {
-        $('prizeState').innerHTML = '<span class="done">交換済み（' + esc(s.redeemedAt) + '）</span>';
+        $('prizeState').innerHTML = '<span class="done">交換済み（' + (s.redeemedSet ? esc(s.redeemedSet) + '・' : '') + esc(s.redeemedAt) + '）</span>';
         $('staffBox').classList.add('hidden');
       } else if (s.prizeRemaining <= 0) {
         $('prizeState').innerHTML = '<span class="done">景品はすべて終了しました</span>';
@@ -334,13 +368,16 @@
   }
 
   $('redeemBtn').addEventListener('click', function () {
+    var sel = document.querySelector('input[name="setSel"]:checked');
+    var setLabel = sel ? sel.value : '';
+    if ((curPrize.prizes || []).length && !setLabel) { $('redeemMsg').textContent = 'お客様が選んだセットを選んでください'; return; }
     $('redeemMsg').textContent = '処理中…';
     google.script.run.withSuccessHandler(function (r) {
       if (r.ok) { render(r); $('redeemMsg').textContent = ''; return; }
-      var e = { bad_pin: '暗証番号が違います', already_redeemed: 'すでに交換済みです', sold_out: '景品の在庫がありません', not_achieved: 'まだ達成していません' };
+      var e = { bad_pin: '暗証番号が違います', already_redeemed: 'すでに交換済みです', sold_out: '景品の在庫がありません', not_achieved: 'まだ達成していません', choose_set: 'お客様が選んだセットを選んでください', set_sold_out: 'このセットは在庫がありません。別のセットをご案内ください' };
       $('redeemMsg').textContent = e[r.error] || 'エラーが発生しました';
     }).withFailureHandler(function () { $('redeemMsg').textContent = 'エラーが発生しました'; })
-      .apiRedeem(getPid(), $('pin').value);
+      .apiRedeem(getPid(), $('pin').value, setLabel);
   });
 
   $('restoreBtn').addEventListener('click', function () {
