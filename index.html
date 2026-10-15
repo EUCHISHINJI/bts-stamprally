@@ -134,9 +134,8 @@
           <li>同じお店でのスタンプは1日1個まで。別のお店なら同じ日でも、同じお店でも別の日なら押せます。</li>
           <li>QRコードはスマホのカメラで読み取ってください（LINEアプリの中では記録できません）。</li>
           <li>お店にいることを位置情報で確認します。位置情報の利用を許可してください（位置そのものは保存しません）。</li>
-          <li>商品の購入は必要ありません。</li>
-          <li>景品は先着順で、なくなり次第終了します。お一人さま1回限りです。</li>
-          <li>舟券の購入は20歳になってから。お酒はお持ち帰り後にお楽しみください。</li>
+          <li>景品は先着30名さまで、BTS土佐の窓口で引き換えた順です（スタンプをためた順ではありません）。なくなり次第終了します。お一人さま1回限りです。</li>
+          <li>舟券の購入は20歳になってから。Aセットのお酒はお持ち帰り後にお楽しみください。</li>
           <li>不正な方法で集めたスタンプは無効とします。</li>
         </ul>
         <p class="muted">お問い合わせ：BTS土佐 0887-54-0555</p>
@@ -246,11 +245,11 @@
     title: 'スタンプ5個でもらえる景品',
     lead: ['AセットかBセットのどちらか1つを選べます。'],
     prizes: [
-      { label: 'Aセット', name: '高知の晩酌セット', items: ['酔鯨 純米吟醸 吟麗 300ml', '一本釣りカツオの缶詰 2缶'], desc: [], remaining: null },
-      { label: 'Bセット', name: '高知のおやつセット', items: ['水車亭 塩けんぴ'], desc: [], remaining: null }
+      { label: 'Aセット', name: '高知の晩酌セット', items: ['酔鯨 純米吟醸 吟麗 300ml'], desc: [], remaining: null },
+      { label: 'Bセット', name: '高知のノンアルセット', items: ['高知くらふと文旦サイダー 約195ml'], desc: [], remaining: null }
     ],
-    common: ['舟券購入券 1,000円分', 'ぽん酢しょうゆ ゆずの村 500ml'],
-    notes: ['先着30名さま・20歳以上の方に限ります。', '受け取り：BTS土佐 窓口（香南市赤岡町986-2）', 'セット内容は変更になる場合があります。']
+    common: ['一本釣りカツオの缶詰 2缶', '水車亭 塩けんぴ', '舟券購入券 1,000円分', 'ぽん酢しょうゆ ゆずの村 500ml'],
+    notes: ['先着30名さま（景品の引き換え順）・20歳以上の方に限ります。', '受け取り：BTS土佐 窓口（香南市赤岡町986-2）、12月31日まで', 'セット内容は変更になる場合があります。']
   };
   var lastRemain = '--', curPrize = DEFAULT_PRIZE;
   function renderPrize(p) {
@@ -334,6 +333,9 @@
       if (s.redeemedAt) {
         $('prizeState').innerHTML = '<span class="done">交換済み（' + (s.redeemedSet ? esc(s.redeemedSet) + '・' : '') + esc(s.redeemedAt) + '）</span>';
         $('staffBox').classList.add('hidden');
+      } else if (s.exchangeEnded) {
+        $('prizeState').innerHTML = '<span class="done">景品の引き換え期間は終了しました</span>';
+        $('staffBox').classList.add('hidden');
       } else if (s.prizeRemaining <= 0) {
         $('prizeState').innerHTML = '<span class="done">景品はすべて終了しました</span>';
         $('staffBox').classList.add('hidden');
@@ -374,7 +376,7 @@
     $('redeemMsg').textContent = '処理中…';
     google.script.run.withSuccessHandler(function (r) {
       if (r.ok) { render(r); $('redeemMsg').textContent = ''; return; }
-      var e = { bad_pin: '暗証番号が違います', already_redeemed: 'すでに交換済みです', sold_out: '景品の在庫がありません', not_achieved: 'まだ達成していません', choose_set: 'お客様が選んだセットを選んでください', set_sold_out: 'このセットは在庫がありません。別のセットをご案内ください' };
+      var e = { bad_pin: '暗証番号が違います', already_redeemed: 'すでに交換済みです', sold_out: '景品の在庫がありません', not_achieved: 'まだ達成していません', exchange_ended: '引き換え期間が終了しています', choose_set: 'お客様が選んだセットを選んでください', set_sold_out: 'このセットは在庫がありません。別のセットをご案内ください' };
       $('redeemMsg').textContent = e[r.error] || 'エラーが発生しました';
     }).withFailureHandler(function () { $('redeemMsg').textContent = 'エラーが発生しました'; })
       .apiRedeem(getPid(), $('pin').value, setLabel);
