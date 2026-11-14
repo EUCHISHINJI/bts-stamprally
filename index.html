@@ -66,6 +66,10 @@
   .setpick label{display:flex;align-items:center;gap:6px;border:1px solid var(--line);border-radius:10px;padding:8px 12px;font-weight:700}
   .giftplus{display:flex;align-items:center;gap:8px;border:2px solid var(--accent);border-radius:10px;padding:10px 12px;font-weight:700}
   .giftplus b{color:var(--accent);font-size:20px}
+  .tcode{margin-top:10px;background:#eef2f7;border:1px solid #c9d4e3;border-radius:10px;padding:10px 12px;font-size:14px;font-weight:700;color:var(--navy)}
+  .tcode b{font-size:22px;letter-spacing:.12em;margin-left:6px}
+  .tcode small{display:block;font-weight:400;color:var(--muted);font-size:12px;margin-top:2px}
+  .card.merge{border:2px solid var(--accent)}
 </style>
 </head>
 <body>
@@ -87,6 +91,19 @@
       <div class="count"><b id="count">0</b> / <span id="goal">5</span> 個</div>
       <div class="stamps" id="stamps"></div>
       <p class="muted" id="todayNote"></p>
+      <div class="tcode hidden" id="tcodeBox">
+        <div>あなたの引継ぎコード <b id="tcodeMain"></b></div>
+        <small>スクリーンショットで保存してください。次のQRで1個目に戻ってしまったときに、このコードでスタンプをまとめられます。</small>
+      </div>
+    </section>
+
+    <section class="card merge hidden" id="mergeCard">
+      <h2>前にもスタンプを押しましたか？</h2>
+      <p class="muted" style="margin:0">QRを読んだアプリやブラウザが前回と違うと、スタンプが1個目からになることがあります。前の画面で表示された<b>引継ぎコード</b>を入れると、前のスタンプと今回のスタンプをまとめられます。</p>
+      <label for="mergeInput">引継ぎコード（8文字）</label>
+      <input id="mergeInput" autocomplete="off" placeholder="例：ABCD2345">
+      <button type="button" id="mergeBtn">まとめる</button>
+      <p class="muted" id="mergeMsg"></p>
     </section>
 
     <section class="card" id="giftCard"></section>
@@ -191,14 +208,17 @@
     try { localStorage.setItem(KEY, pid); } catch (e) {}
     try { document.cookie = KEY + '=' + pid + '; Max-Age=31536000; Path=/; SameSite=Lax; Secure'; } catch (e) {}
   }
+  var freshPid = false;  /* このブラウザに参加者IDが残っておらず、新しく作ったとき true */
   function getPid() {
     var pid = null;
     try { pid = localStorage.getItem(KEY); } catch (e) {}
     if (!pid) pid = readCookie();
-    if (!pid) pid = newPid();
+    if (!pid) { pid = newPid(); freshPid = true; }
     saveBoth(pid);
     return pid;
   }
+  /* ブラウザに「消さないで」と頼む（対応ブラウザのみ） */
+  try { if (navigator.storage && navigator.storage.persist) navigator.storage.persist(); } catch (e) {}
   function setPid(pid) { saveBoth(pid); }
   function $(id) { return document.getElementById(id); }
   function esc(s) { return String(s).replace(/[&<>"']/g, function (c) { return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
@@ -322,6 +342,10 @@
       : '<li class="muted">まだスタンプはありません</li>';
 
     $('transferCode').textContent = s.transferCode || '（スタンプを1個押すと表示されます）';
+    $('tcodeMain').textContent = s.transferCode || '';
+    $('tcodeBox').classList.toggle('hidden', !(s.transferCode && s.count < s.goal));
+    /* このブラウザで初めて押した（＝前の記録とつながっていないかもしれない）ときは、まとめる欄を出す */
+    $('mergeCard').classList.toggle('hidden', !(freshPid && s.result === 'stamped' && s.count < s.goal) && !mergeOpen);
     $('pidTail').textContent = '参加者ID：…' + getPid().slice(-4);
 
     var achieved = s.count >= s.goal && s.prizeCode;
@@ -382,16 +406,31 @@
       .apiRedeem(getPid(), $('pin').value, setLabel);
   });
 
-  $('restoreBtn').addEventListener('click', function () {
-    $('restoreMsg').textContent = '確認中…';
+  /* 引継ぎコードで復元。この画面で押したスタンプがあれば、復元先にまとめる */
+  var mergeOpen = false;
+  function doRestore(inputId, msgId) {
+    var code = $(inputId).value;
+    $(msgId).textContent = '確認中…';
     google.script.run.withSuccessHandler(function (r) {
-      if (!r.ok) { $('restoreMsg').textContent = '引継ぎコードが見つかりません'; return; }
+      if (!r.ok) {
+        var e = { redeemed_here: 'この画面ではすでに景品を交換済みのため、まとめられません。窓口にお問い合わせください。', bad_code: '引継ぎコードを8文字で入力してください' };
+        $(msgId).textContent = e[r.error] || '引継ぎコードが見つかりません。もう一度ご確認ください。';
+        return;
+      }
       setPid(r.pid);
-      $('restoreMsg').textContent = '復元しました';
-      google.script.run.withSuccessHandler(render).withFailureHandler(fail).apiStatus(r.pid);
-    }).withFailureHandler(function () { $('restoreMsg').textContent = 'エラーが発生しました'; })
-      .apiRestore($('restoreInput').value);
-  });
+      freshPid = false; mergeOpen = false;
+      google.script.run.withSuccessHandler(function (s) {
+        render(s);
+        var m = r.merged ? 'スタンプをまとめました（この画面で押した' + r.merged + '個を合わせています）。' : '前のスタンプを復元しました。';
+        $('banner').innerHTML = '<div class="banner ok">' + esc(m) + '<small>今後もこのコードで引き継げます。</small></div>';
+        $(msgId).textContent = '';
+        window.scrollTo(0, 0);
+      }).withFailureHandler(fail).apiStatus(r.pid);
+    }).withFailureHandler(function () { $(msgId).textContent = 'エラーが発生しました'; })
+      .apiRestore(code, getPid());
+  }
+  $('restoreBtn').addEventListener('click', function () { doRestore('restoreInput', 'restoreMsg'); });
+  $('mergeBtn').addEventListener('click', function () { mergeOpen = true; doRestore('mergeInput', 'mergeMsg'); });
 
   load();
 </script>
