@@ -209,11 +209,16 @@
     try { document.cookie = KEY + '=' + pid + '; Max-Age=31536000; Path=/; SameSite=Lax; Secure'; } catch (e) {}
   }
   var freshPid = false;  /* このブラウザに参加者IDが残っておらず、新しく作ったとき true */
+  var DIAG = null;       /* 調査用（テスト期間のみ）：開いたときに保存データが残っていたか */
   function getPid() {
-    var pid = null;
-    try { pid = localStorage.getItem(KEY); } catch (e) {}
-    if (!pid) pid = readCookie();
+    var pid = null, ls = 'miss', ck = 'miss';
+    try { pid = localStorage.getItem(KEY); ls = pid ? 'hit' : 'miss'; } catch (e) { ls = 'err'; }
+    var c = null;
+    try { c = readCookie(); ck = c ? 'hit' : 'miss'; } catch (e) { ck = 'err'; }
+    if (!pid) pid = c;
     if (!pid) { pid = newPid(); freshPid = true; }
+    if (!DIAG) DIAG = { ls: ls, ck: ck, hist: history.length, ref: document.referrer ? 'あり' : 'なし',
+                        ce: navigator.cookieEnabled ? 1 : 0, ua: String(navigator.userAgent || '').slice(0, 220) };
     saveBoth(pid);
     return pid;
   }
@@ -385,7 +390,7 @@
     $('loading').classList.remove('hidden');
     $('app').classList.add('hidden');
     var send = function (geo) {
-      google.script.run.withSuccessHandler(render).withFailureHandler(fail).apiStamp(pid, STORE_CODE, geo);
+      google.script.run.withSuccessHandler(render).withFailureHandler(fail).apiStamp(pid, STORE_CODE, geo, DIAG);
     };
     if (!navigator.geolocation) { send(null); return; }
     navigator.geolocation.getCurrentPosition(function (pos) {
