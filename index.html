@@ -343,6 +343,14 @@
   var CITY_COLOR = { '高知市': '#2E6DA4', '南国市': '#138A8A', '香南市': '#E8602C', '芸西村': '#7A5BA6' };
   var shopOpen = {};   // 開いている市（読み込み直しても開いたままにする）
   function safeUrl(u) { u = String(u || '').trim(); return /^https?:\/\//i.test(u) ? u : ''; }
+  /* HP列のリンクの見出し（11/20：HPがない店は食べログやGoogleマップのお店のページを入れる） */
+  function linkLabel(u) {
+    if (/tabelog\.com/i.test(u)) return '食べログ';
+    if (/hotpepper\.jp/i.test(u)) return 'ホットペッパー';
+    if (/facebook\.com/i.test(u)) return 'Facebook';
+    if (/google\.[a-z.]+\/maps/i.test(u)) return '写真・口コミ';
+    return 'ホームページ';
+  }
   function renderShops(s) {
     var shops = s.shops || [];
     $('shopCard').classList.toggle('hidden', !shops.length);
@@ -363,7 +371,7 @@
         var ph = src ? '<img src="' + esc(src) + '" alt="' + esc(sh.name) + 'の外観" loading="lazy">' : esc(icon);
         var mark = today[sh.name] ? '<span class="got today">今日押した</span>' : got[sh.name] ? '<span class="got">押した</span>' : '';
         var links = [];
-        if (safeUrl(sh.hp)) links.push('<a href="' + esc(safeUrl(sh.hp)) + '" target="_blank" rel="noopener">ホームページ</a>');
+        if (safeUrl(sh.hp)) links.push('<a href="' + esc(safeUrl(sh.hp)) + '" target="_blank" rel="noopener">' + linkLabel(sh.hp) + '</a>');
         if (safeUrl(sh.insta)) links.push('<a href="' + esc(safeUrl(sh.insta)) + '" target="_blank" rel="noopener">Instagram</a>');
         if (sh.lat !== null && sh.lng !== null) links.push('<a href="https://www.google.com/maps/search/?api=1&query=' + sh.lat + ',' + sh.lng + '" target="_blank" rel="noopener">地図</a>');
         return '<div class="shop"><div class="ph">' + ph + '</div><div class="bd">' +
