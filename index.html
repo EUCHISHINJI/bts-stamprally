@@ -349,6 +349,10 @@
     if (/hotpepper\.jp/i.test(u)) return 'ホットペッパー';
     if (/facebook\.com/i.test(u)) return 'Facebook';
     if (/google\.[a-z.]+\/maps/i.test(u)) return '写真・口コミ';
+    if (/retty\.me/i.test(u)) return 'Retty';
+    if (/gnavi\.co\.jp/i.test(u)) return 'ぐるなび';
+    if (/nankoku-kankou\.jp/i.test(u)) return '南国市観光協会';
+    if (/eimons\.jp/i.test(u)) return '紹介記事';
     return 'ホームページ';
   }
   function renderShops(s) {
