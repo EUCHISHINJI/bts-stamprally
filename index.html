@@ -17,6 +17,14 @@
   .banner.info{background:#eef2f7;color:var(--navy);border:1px solid #c9d4e3}
   .banner.warn{background:#fbeee9;color:#8a3519;border:1px solid #efc6b7}
   .banner small{display:block;font-weight:400;margin-top:4px}
+  /* 11/21 位置情報がオフ・拒否のときの手順 */
+  .geohelp{background:#fff;border:1px solid #efc6b7;border-radius:12px;padding:10px 14px;margin:0 0 14px;font-size:14px}
+  .geohelp p{margin:4px 0 8px}
+  .geohelp details{border-top:1px solid #eee;padding:8px 0}
+  .geohelp summary{font-weight:700;cursor:pointer;color:var(--navy)}
+  .geohelp ol{margin:6px 0 2px;padding-left:1.4em}
+  .geohelp li{margin:4px 0}
+  .geohelp b{color:#8a3519}
   .card{background:var(--card);border:1px solid var(--line);border-radius:14px;padding:16px;margin-bottom:14px}
   .card h2{margin:0 0 10px;font-size:17px;color:var(--navy)}
   .count{font-size:15px;margin-bottom:10px}
@@ -262,7 +270,7 @@
     bad_store: function () { return ['warn', 'このQRコードは使えません', '協力店のQRコードを読み取ってください。'] },
     not_started: function (s) { return ['warn', 'まだ開催前です', md(s.startDate) + 'からスタンプを押せます。'] },
     ended: function () { return ['warn', 'スタンプラリーは終了しました', 'たくさんのご参加ありがとうございました。'] },
-    need_location: function () { return ['warn', '位置情報を確認できませんでした', 'お店にいることを確認するため、位置情報の利用を「許可」してください。許可したら下の「もう一度試す」を押してください。'] },
+    need_location: function () { return ['warn', '位置情報を確認できませんでした', 'お店にいることを確認するため、スマホの位置情報を使います。'] },
     too_far: function (s) { return ['warn', 'お店から離れているようです', 'スタンプはお店の中（店舗から約' + s.radius + 'm以内）で押せます。お店に着いてから「もう一度試す」を押してください。'] },
     status: function (s) { return s.count ? null : ['info', '協力店のQRコードを読み取ってください', 'スタンプを5個集めると、BTS土佐で景品と交換できます。'] }
   };
@@ -408,8 +416,16 @@
     var m = MESSAGES[s.result] ? MESSAGES[s.result](s) : null;
     if (s.result === 'stamped' && s.count >= s.goal) m = ['ok', 'スタンプ' + s.goal + '個達成、おめでとうございます！', '下の引換番号をBTS土佐の窓口でお見せください。'];
     $('banner').innerHTML = m ? '<div class="banner ' + m[0] + '">' + esc(m[1]) + '<small>' + esc(m[2]) + '</small></div>' : '';
-    if (s.result === 'need_location' || s.result === 'too_far') {
-      $('banner').innerHTML += '<button type="button" id="retryBtn">もう一度試す</button><p class="muted">位置情報の許可方法：iPhoneは「設定」→「プライバシーとセキュリティ」→「位置情報サービス」で、お使いのブラウザを「使用中のみ」に。Androidはアドレスバーの鍵マークから「位置情報」を許可。</p>';
+    /* 11/21 景品がなくなったら、交換済みの人以外の全員に画面の一番上で知らせる */
+    if (s.prizeRemaining <= 0 && !s.redeemedAt) {
+      $('banner').innerHTML = '<div class="banner warn">景品はすべてなくなりました<small>先着' + esc(String(s.prizeLimit || 30)) + '名さまの景品は終了しました。たくさんのご参加、ありがとうございました。</small></div>' + $('banner').innerHTML;
+    }
+    if (s.result === 'need_location') {
+      /* 位置情報がオフ・拒否のときは、許可しなおしたあとページを読み込みなおす（拒否したままだと再度聞かれないため） */
+      $('banner').innerHTML += geoHelpHtml() + '<button type="button" id="retryBtn">設定したら、ここを押してもう一度読み込む</button>';
+      $('retryBtn').addEventListener('click', function () { location.reload(); });
+    } else if (s.result === 'too_far') {
+      $('banner').innerHTML += '<button type="button" id="retryBtn">もう一度試す</button>';
       $('retryBtn').addEventListener('click', load);
     }
 
@@ -476,8 +492,32 @@
     };
     if (!navigator.geolocation) { send(null); return; }
     navigator.geolocation.getCurrentPosition(function (pos) {
+      geoErr = 0;
       send({ lat: pos.coords.latitude, lng: pos.coords.longitude, acc: pos.coords.accuracy });
-    }, function () { send(null); }, { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 });
+    }, function (e) { geoErr = (e && e.code) || 2; send(null); }, { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 });
+  }
+
+  /* 11/21 位置情報が使えなかったときの手順（スマホ本体がオフ／ブラウザで拒否、の両方に対応）
+     ページからスマホの設定を変えたり、毎回許可を聞かせたりはできないため、手順を分かりやすく見せる */
+  var geoErr = 0;
+  function geoHelpHtml() {
+    var ua = navigator.userAgent;
+    var ios = /iPhone|iPad|iPod/i.test(ua), android = /Android/i.test(ua);
+    var lead = geoErr === 3
+      ? '位置情報の取得に時間がかかりました。電波の入る場所で、もう一度お試しください。それでもだめなときは、下の設定をご確認ください。'
+      : 'スマホの位置情報が「オフ」になっているか、ブラウザで位置情報を「許可しない」にしている可能性があります。下の手順でオンにしてから、もう一度読み込んでください。（位置そのものは保存しません）';
+    var iphone = '<details' + (ios || !android ? ' open' : '') + '><summary>iPhone の場合</summary><ol>'
+      + '<li><b>スマホの位置情報をオン</b>：「設定」→「プライバシーとセキュリティ」→「位置情報サービス」をオン</li>'
+      + '<li><b>ブラウザに許可</b>：同じ画面の下にある「Safari Webサイト」（Chromeなら「Chrome」）を「このAppの使用中」に</li>'
+      + '<li>前に「許可しない」を押した場合：「設定」→（「アプリ」→）「Safari」→「位置情報」を「確認」または「許可」に</li>'
+      + '</ol></details>';
+    var andr = '<details' + (android ? ' open' : '') + '><summary>Android の場合</summary><ol>'
+      + '<li><b>スマホの位置情報をオン</b>：画面の上から下へなぞって、クイック設定の「位置情報」をオン</li>'
+      + '<li><b>ブラウザに許可</b>：アドレスバー左のマークを押し、「権限」（または「サイトの設定」）で「位置情報」を「許可」</li>'
+      + '<li>それでもだめな場合：「設定」→「アプリ」→「Chrome」→「権限」→「位置情報」を「アプリの使用中のみ許可」に</li>'
+      + '</ol></details>';
+    return '<div class="geohelp"><p>' + esc(lead) + '</p>' + (android ? andr + iphone : iphone + andr)
+      + '<p class="muted">※機種や OS のバージョンによって、項目の名前や場所が少し違うことがあります。</p></div>';
   }
 
   $('redeemBtn').addEventListener('click', function () {
