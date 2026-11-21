@@ -263,6 +263,12 @@
   function esc(s) { return String(s).replace(/[&<>"']/g, function (c) { return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
   function md(d) { var p = String(d).split('-'); return p.length === 3 ? Number(p[1]) + '/' + Number(p[2]) : d; }
 
+  /* 店名＋町名だけではGoogleマップのお店のページが開かない店は、ここで検索語を指定する（11/21） */
+  var MAP_QUERY = {
+    'レストラン かとり': 'かとり 香南市野市町東野1954-5',
+    'Kochi黒潮カントリークラブ クラブハウスレストラン': 'Kochi黒潮カントリークラブ 高知県芸西村'
+  };
+
   var MESSAGES = {
     stamped: function (s) { return ['ok', 'スタンプを押しました！', s.storeName + ' でスタンプ1個ゲット。'] },
     already_today: function (s) { return ['info', 'このお店では今日はもう押しています', '同じお店は1日1個までです。別のお店なら今日も押せます。'] },
@@ -385,7 +391,9 @@
         var links = [];
         if (safeUrl(sh.hp)) links.push('<a href="' + esc(safeUrl(sh.hp)) + '" target="_blank" rel="noopener">' + linkLabel(sh.hp) + '</a>');
         if (safeUrl(sh.insta)) links.push('<a href="' + esc(safeUrl(sh.insta)) + '" target="_blank" rel="noopener">Instagram</a>');
-        if (sh.lat !== null && sh.lng !== null) links.push('<a href="https://www.google.com/maps/search/?api=1&query=' + sh.lat + ',' + sh.lng + '" target="_blank" rel="noopener">地図</a>');
+        /* 11/21 地図は緯度経度ではなく「店名＋住所」で検索し、Googleマップのお店のページが開くようにする（全店で確認済み） */
+        var mq = MAP_QUERY[sh.name] || (sh.name + ' 高知県' + (sh.city || '') + (sh.town || ''));
+        links.push('<a href="https://www.google.com/maps/search/?api=1&query=' + encodeURIComponent(mq) + '" target="_blank" rel="noopener">地図</a>');
         return '<div class="shop"><div class="ph">' + ph + '</div><div class="bd">' +
           '<div class="nm"><span class="no">' + sh.no + '</span>' + esc(sh.name) + mark + '</div>' +
           '<div class="mt">' + esc(icon + ' ' + (sh.genre || '')) + '　' + esc(sh.city + sh.town) + '</div>' +
