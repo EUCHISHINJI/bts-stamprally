@@ -146,7 +146,7 @@
       <h2>景品引換番号</h2>
       <div class="code" id="prizeCode">----</div>
       <div id="prizeState"></div>
-      <p class="muted">BTS土佐の窓口でこの画面をスタッフにお見せください。<br>20歳以上の方に限ります（身分証明書をお持ちください）。<br>引換期限：<span id="deadline"></span>／景品の残り：<span id="remaining"></span>個</p>
+      <p class="muted">BTS土佐の総合案内でこの画面をスタッフにお見せください。<br>20歳以上の方に限ります（身分証明書をお持ちください）。<br>引換期限：<span id="deadline"></span>／景品の残り：<span id="remaining"></span>個</p>
       <div id="staffBox">
         <details>
           <summary>スタッフ用：交換済みにする</summary>
@@ -185,7 +185,7 @@
           <li>同じお店でのスタンプは1日1個まで。別のお店なら同じ日でも、同じお店でも別の日なら押せます。</li>
           <li>QRコードはスマホのカメラで読み取ってください（LINEアプリの中では記録できません）。</li>
           <li>お店にいることを位置情報で確認します。位置情報の利用を許可してください（位置そのものは保存しません）。</li>
-          <li>景品は先着30名さまで、BTS土佐の窓口で引き換えた順です（スタンプをためた順ではありません）。なくなり次第終了します。お一人さま1回限りです。</li>
+          <li>景品は先着30名さまで、BTS土佐の総合案内で引き換えた順です（スタンプをためた順ではありません）。なくなり次第終了します。お一人さま1回限りです。</li>
           <li>舟券の購入は20歳になってから。Aセットのお酒はお持ち帰り後にお楽しみください。</li>
           <li>不正な方法で集めたスタンプは無効とします。</li>
         </ul>
@@ -272,7 +272,7 @@
   var MESSAGES = {
     stamped: function (s) { return ['ok', 'スタンプを押しました！', s.storeName + ' でスタンプ1個ゲット。'] },
     already_today: function (s) { return ['info', 'このお店では今日はもう押しています', '同じお店は1日1個までです。別のお店なら今日も押せます。'] },
-    already_achieved: function () { return ['info', 'スタンプは達成済みです', '下の引換番号をBTS土佐の窓口でお見せください。'] },
+    already_achieved: function () { return ['info', 'スタンプは達成済みです', '下の引換番号をBTS土佐の総合案内でお見せください。'] },
     bad_store: function () { return ['warn', 'このQRコードは使えません', '協力店のQRコードを読み取ってください。'] },
     not_started: function (s) { return ['warn', 'まだ開催前です', md(s.startDate) + 'からスタンプを押せます。'] },
     ended: function () { return ['warn', 'スタンプラリーは終了しました', 'たくさんのご参加ありがとうございました。'] },
@@ -314,7 +314,7 @@
       { label: 'Bセット', name: '高知のノンアルセット', items: ['高知くらふと文旦サイダー 約195ml'], desc: [], remaining: null }
     ],
     common: ['一本釣りカツオの缶詰 2缶', '水車亭 塩けんぴ', '舟券購入券 1,000円分', 'ぽん酢しょうゆ ゆずの村 500ml'],
-    notes: ['先着30名さま（景品の引き換え順）・20歳以上の方に限ります。', '受け取り：BTS土佐 窓口（香南市赤岡町986-2）、12月30日まで', 'セット内容は変更になる場合があります。']
+    notes: ['先着30名さま（景品の引き換え順）・20歳以上の方に限ります。', '受け取り：BTS土佐 総合案内（香南市赤岡町986-2）、12月30日まで', 'セット内容は変更になる場合があります。']
   };
   var lastRemain = '--', curPrize = DEFAULT_PRIZE;
   function renderPrize(p) {
@@ -353,7 +353,7 @@
 
   /* 協力店一覧（11/20）：市ごとに開け閉めできる一覧。写真・HP・Instagram・地図へのリンク */
   var GENRE_ICON = { '居酒屋': '🍺', 'カフェ': '☕', '喫茶': '☕', 'スイーツ': '🍰', 'レストラン': '🍽️', '焼き鳥': '🍗',
-                     '焼肉': '🥩', 'ラーメン': '🍜', 'ハンバーガー': '🍔', '海鮮': '🐟' };
+                     '焼肉': '🥩', 'ラーメン': '🍜', 'ハンバーガー': '🍔', '海鮮': '🐟', 'カレー': '🍛', 'お好み焼き': '🥞' };
   var CITY_COLOR = { '高知市': '#2E6DA4', '南国市': '#138A8A', '香南市': '#E8602C', '芸西村': '#7A5BA6' };
   var shopOpen = {};   // 開いている市（読み込み直しても開いたままにする）
   function safeUrl(u) { u = String(u || '').trim(); return /^https?:\/\//i.test(u) ? u : ''; }
@@ -422,7 +422,7 @@
     renderPrize(s.prize);
     renderShops(s);
     var m = MESSAGES[s.result] ? MESSAGES[s.result](s) : null;
-    if (s.result === 'stamped' && s.count >= s.goal) m = ['ok', 'スタンプ' + s.goal + '個達成、おめでとうございます！', '下の引換番号をBTS土佐の窓口でお見せください。'];
+    if (s.result === 'stamped' && s.count >= s.goal) m = ['ok', 'スタンプ' + s.goal + '個達成、おめでとうございます！', '下の引換番号をBTS土佐の総合案内でお見せください。'];
     $('banner').innerHTML = m ? '<div class="banner ' + m[0] + '">' + esc(m[1]) + '<small>' + esc(m[2]) + '</small></div>' : '';
     /* 11/21 景品がなくなったら、交換済みの人以外の全員に画面の一番上で知らせる */
     if (s.prizeRemaining <= 0 && !s.redeemedAt) {
@@ -548,7 +548,7 @@
     $(msgId).textContent = '確認中…';
     google.script.run.withSuccessHandler(function (r) {
       if (!r.ok) {
-        var e = { redeemed_here: 'この画面ではすでに景品を交換済みのため、まとめられません。窓口にお問い合わせください。', bad_code: '引継ぎコードを8文字で入力してください' };
+        var e = { redeemed_here: 'この画面ではすでに景品を交換済みのため、まとめられません。総合案内にお問い合わせください。', bad_code: '引継ぎコードを8文字で入力してください' };
         $(msgId).textContent = e[r.error] || '引継ぎコードが見つかりません。もう一度ご確認ください。';
         return;
       }
