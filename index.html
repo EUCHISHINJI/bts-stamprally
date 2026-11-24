@@ -78,7 +78,7 @@
   .tcode b{font-size:22px;letter-spacing:.12em;margin-left:6px}
   .tcode small{display:block;font-weight:400;color:var(--muted);font-size:12px;margin-top:2px}
   .card.merge{border:2px solid var(--accent)}
-  /* 協力店一覧（11/20） */
+  /* 参加店一覧（11/20） */
   .shopcity{border-top:1px solid #eee5d3;padding:8px 0}
   .shopcity:first-of-type{border-top:0}
   .shopcity summary{display:flex;align-items:center;gap:8px;font-size:15px;list-style:none}
@@ -181,7 +181,7 @@
       <details>
         <summary>ルール</summary>
         <ul class="rules">
-          <li>協力店にあるQRコードをスマホのカメラで読み取るとスタンプが1個たまります。</li>
+          <li>参加店にあるQRコードをスマホのカメラで読み取るとスタンプが1個たまります。</li>
           <li>同じお店でのスタンプは1日1個まで。別のお店なら同じ日でも、同じお店でも別の日なら押せます。</li>
           <li>QRコードはスマホのカメラで読み取ってください（LINEアプリの中では記録できません）。</li>
           <li>お店にいることを位置情報で確認します。位置情報の利用を許可してください（位置そのものは保存しません）。</li>
@@ -273,12 +273,12 @@
     stamped: function (s) { return ['ok', 'スタンプを押しました！', s.storeName + ' でスタンプ1個ゲット。'] },
     already_today: function (s) { return ['info', 'このお店では今日はもう押しています', '同じお店は1日1個までです。別のお店なら今日も押せます。'] },
     already_achieved: function () { return ['info', 'スタンプは達成済みです', '下の引換番号をBTS土佐の総合案内でお見せください。'] },
-    bad_store: function () { return ['warn', 'このQRコードは使えません', '協力店のQRコードを読み取ってください。'] },
+    bad_store: function () { return ['warn', 'このQRコードは使えません', '参加店のQRコードを読み取ってください。'] },
     not_started: function (s) { return ['warn', 'まだ開催前です', md(s.startDate) + 'からスタンプを押せます。'] },
     ended: function () { return ['warn', 'スタンプラリーは終了しました', 'たくさんのご参加ありがとうございました。'] },
     need_location: function () { return ['warn', '位置情報を確認できませんでした', 'お店にいることを確認するため、スマホの位置情報を使います。'] },
     too_far: function (s) { return ['warn', 'お店から離れているようです', 'スタンプはお店の中（店舗から約' + s.radius + 'm以内）で押せます。お店に着いてから「もう一度試す」を押してください。'] },
-    status: function (s) { return s.count ? null : ['info', '協力店のQRコードを読み取ってください', 'スタンプを5個集めると、BTS土佐で景品と交換できます。'] }
+    status: function (s) { return s.count ? null : ['info', '参加店のQRコードを読み取ってください', 'スタンプを5個集めると、BTS土佐で景品と交換できます。'] }
   };
 
   var TRIVIA = [
@@ -351,7 +351,7 @@
   }
   renderPrize(DEFAULT_PRIZE);
 
-  /* 協力店一覧（11/20）：市ごとに開け閉めできる一覧。写真・HP・Instagram・地図へのリンク */
+  /* 参加店一覧（11/20）：市ごとに開け閉めできる一覧。写真・HP・Instagram・地図へのリンク */
   var GENRE_ICON = { '居酒屋': '🍺', 'カフェ': '☕', '喫茶': '☕', 'スイーツ': '🍰', 'レストラン': '🍽️', '焼き鳥': '🍗',
                      '焼肉': '🥩', 'ラーメン': '🍜', 'ハンバーガー': '🍔', '海鮮': '🐟', 'カレー': '🍛', 'お好み焼き': '🥞' };
   var CITY_COLOR = { '高知市': '#2E6DA4', '南国市': '#138A8A', '香南市': '#E8602C', '芸西村': '#7A5BA6' };
