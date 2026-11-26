@@ -429,9 +429,10 @@
     var m = MESSAGES[s.result] ? MESSAGES[s.result](s) : null;
     if (s.result === 'stamped' && s.count >= s.goal) m = ['ok', 'スタンプ' + s.goal + '個達成、おめでとうございます！', '下の引換番号をBTS土佐の総合案内でお見せください。'];
     $('banner').innerHTML = m ? '<div class="banner ' + m[0] + '">' + esc(m[1]) + '<small>' + esc(m[2]) + '</small></div>' : '';
-    /* 11/21 景品がなくなったら、交換済みの人以外の全員に画面の一番上で知らせる */
+    /* 11/21 景品がなくなったら、交換済みの人以外の全員に画面の一番上で知らせる
+       11/26ご指示：景品がなくなったらイベント終了。ほかの案内は出さず「終了しました」だけにする */
     if (s.prizeRemaining <= 0 && !s.redeemedAt) {
-      $('banner').innerHTML = '<div class="banner warn">景品はすべてなくなりました<small>先着' + esc(String(s.prizeLimit || 30)) + '名さまの景品は終了しました。たくさんのご参加、ありがとうございました。</small></div>' + $('banner').innerHTML;
+      $('banner').innerHTML = '<div class="banner warn">スタンプラリーは終了しました<small>先着' + esc(String(s.prizeLimit || 30)) + '名さまの景品がすべてなくなったため、終了しました。たくさんのご参加、ありがとうございました。</small></div>';
     }
     if (s.result === 'need_location') {
       /* 位置情報がオフ・拒否のときは、許可しなおしたあとページを読み込みなおす（拒否したままだと再度聞かれないため） */
@@ -497,17 +498,25 @@
       return;
     }
     if (!STORE_CODE) { google.script.run.withSuccessHandler(render).withFailureHandler(fail).apiStatus(pid); return; }
-    $('loading').textContent = '位置情報を確認しています…';
     $('loading').classList.remove('hidden');
     $('app').classList.add('hidden');
     var send = function (geo) {
       google.script.run.withSuccessHandler(render).withFailureHandler(fail).apiStamp(pid, STORE_CODE, geo, null);
     };
-    if (!navigator.geolocation) { send(null); return; }
-    navigator.geolocation.getCurrentPosition(function (pos) {
-      geoErr = 0;
-      send({ lat: pos.coords.latitude, lng: pos.coords.longitude, acc: pos.coords.accuracy });
-    }, function (e) { geoErr = (e && e.code) || 2; send(null); }, { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 });
+    var stamp = function () {
+      $('loading').textContent = '位置情報を確認しています…';
+      if (!navigator.geolocation) { send(null); return; }
+      navigator.geolocation.getCurrentPosition(function (pos) {
+        geoErr = 0;
+        send({ lat: pos.coords.latitude, lng: pos.coords.longitude, acc: pos.coords.accuracy });
+      }, function (e) { geoErr = (e && e.code) || 2; send(null); }, { enableHighAccuracy: true, timeout: 15000, maximumAge: 0 });
+    };
+    /* 11/26ご指示：景品がなくなったらイベント終了。先に残りを確かめ、0ならスタンプを押さずに「終了しました」を出す
+       （交換済みの方は、交換済みの画面を見られるようそのまま表示） */
+    google.script.run.withSuccessHandler(function (s) {
+      if (s && s.ok && s.prizeRemaining <= 0) { render(s); return; }
+      stamp();
+    }).withFailureHandler(stamp).apiStatus(pid);
   }
 
   /* 11/21 位置情報が使えなかったときの手順（スマホ本体がオフ／ブラウザで拒否、の両方に対応）
