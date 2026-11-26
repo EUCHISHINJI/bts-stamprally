@@ -262,6 +262,9 @@
   function $(id) { return document.getElementById(id); }
   function esc(s) { return String(s).replace(/[&<>"']/g, function (c) { return {'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c]; }); }
   function md(d) { var p = String(d).split('-'); return p.length === 3 ? Number(p[1]) + '/' + Number(p[2]) : d; }
+  /* 11/26 曜日（「（火）」）と、端末の今日（yyyy-MM-dd） */
+  function wd(d) { var p = String(d).split('-'); if (p.length !== 3) return ''; return '（' + '日月火水木金土'.charAt(new Date(+p[0], +p[1] - 1, +p[2]).getDay()) + '）'; }
+  function localToday() { var t = new Date(); return t.getFullYear() + '-' + ('0' + (t.getMonth() + 1)).slice(-2) + '-' + ('0' + t.getDate()).slice(-2); }
 
   /* 店名＋町名だけではGoogleマップのお店のページが開かない店は、ここで検索語を指定する（11/21） */
   var MAP_QUERY = {
@@ -274,11 +277,15 @@
     already_today: function (s) { return ['info', 'このお店では今日はもう押しています', '同じお店は1日1個までです。別のお店なら今日も押せます。'] },
     already_achieved: function () { return ['info', 'スタンプは達成済みです', '下の引換番号をBTS土佐の総合案内でお見せください。'] },
     bad_store: function () { return ['warn', 'このQRコードは使えません', '参加店のQRコードを読み取ってください。'] },
-    not_started: function (s) { return ['warn', 'まだ開催前です', md(s.startDate) + 'からスタンプを押せます。'] },
+    /* 11/26ご指示：開始前は「開始までお待ちください」の画面に */
+    not_started: function (s) { return ['info', md(s.startDate) + wd(s.startDate) + 'スタート！開始までお待ちください', 'スタンプは' + md(s.startDate) + wd(s.startDate) + 'から押せます。開始後に、もう一度お店のQRコードを読み取ってください。'] },
     ended: function () { return ['warn', 'スタンプラリーは終了しました', 'たくさんのご参加ありがとうございました。'] },
     need_location: function () { return ['warn', '位置情報を確認できませんでした', 'お店にいることを確認するため、スマホの位置情報を使います。'] },
     too_far: function (s) { return ['warn', 'お店から離れているようです', 'スタンプはお店の中（店舗から約' + s.radius + 'm以内）で押せます。お店に着いてから「もう一度試す」を押してください。'] },
-    status: function (s) { return s.count ? null : ['info', '参加店のQRコードを読み取ってください', 'スタンプを5個集めると、BTS土佐で景品と交換できます。'] }
+    status: function (s) {
+      if (s.startDate && localToday() < s.startDate) return MESSAGES.not_started(s);   /* 11/26 開始前はQRなしで開いても同じ案内 */
+      return s.count ? null : ['info', '参加店のQRコードを読み取ってください', 'スタンプを5個集めると、BTS土佐で景品と交換できます。'];
+    }
   };
 
   var TRIVIA = [
