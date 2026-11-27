@@ -8,9 +8,15 @@
   :root{--ink:#1c2330;--navy:#1f3a5f;--accent:#c8502d;--paper:#f6f1e7;--card:#fffdf8;--line:#d9d0bf;--muted:#4a5260}
   *{box-sizing:border-box}
   body{margin:0;background:var(--paper);color:var(--ink);font-family:"Hiragino Kaku Gothic ProN","Noto Sans JP","Yu Gothic",sans-serif;line-height:1.6}
-  header{background:var(--navy);color:#fff;padding:18px 16px 16px}
-  header .kicker{font-size:13px;letter-spacing:.08em;opacity:.9}
-  header h1{margin:2px 0 0;font-size:22px;line-height:1.35}
+  /* 11/27 見出しを目立つように：ポスターと同じ赤の帯、イベント名は2行（土佐の隠れ家グルメ／ＱＲスタンプラリー）＋期間・先着30名 */
+  header{background:linear-gradient(180deg,#d8443a 0%,#a51f2b 100%);color:#fff;padding:14px 16px 16px;text-align:center}
+  header .kicker{font-size:13px;font-weight:700;letter-spacing:.04em;color:#ffe27a}
+  header h1{margin:4px 0 0;line-height:1.15;font-weight:800}
+  header h1 .t1{display:block;font-size:22px;letter-spacing:.04em}
+  header h1 .t2{display:block;font-size:31px;letter-spacing:.02em;margin-top:2px}
+  header .when{display:flex;justify-content:center;align-items:center;flex-wrap:wrap;gap:6px;margin-top:10px}
+  header .date{background:#fff;color:#a51f2b;border-radius:999px;padding:3px 14px;font-size:15px;font-weight:800}
+  header .lim{background:#ffe27a;color:#7a1a14;border-radius:999px;padding:3px 12px;font-size:14px;font-weight:800}
   main{max-width:480px;margin:0 auto;padding:16px}
   .banner{border-radius:12px;padding:14px 16px;margin-bottom:14px;font-weight:700}
   .banner.ok{background:#e7f1ea;color:#1f5f3a;border:1px solid #b9d9c3}
@@ -102,17 +108,32 @@
 </head>
 <body>
 <header>
-  <div class="kicker">BTS土佐 QRスタンプラリー</div>
-  <h1 id="eventName">スタンプラリー</h1>
+  <div class="kicker">知る人ぞ知る、地元のいい店をめぐる</div>
+  <h1 id="eventName"><span class="t1">土佐の隠れ家グルメ</span><span class="t2">ＱＲスタンプラリー</span></h1>
+  <div class="when"><span class="date">12/1（火）〜12/30（水）</span><span class="lim">先着30名限定</span></div>
 </header>
 <main>
   <div id="loading">読み込み中…</div>
   <div id="app" class="hidden">
     <div id="banner"></div>
-    <div class="trivia" id="triviaBox">
-      <div class="lbl">ボートレース豆知識</div>
-      <p id="triviaText"></p>
-    </div>
+    <!-- 11/27 最初の画面の並び：案内 → 景品引換番号（達成した人だけ）→ あなたのスタンプ → 景品 → 参加店 → 履歴 → 豆知識 -->
+    <section class="card prize hidden" id="prizeCard">
+      <h2>景品引換番号</h2>
+      <div class="code" id="prizeCode">----</div>
+      <div id="prizeState"></div>
+      <p class="muted">BTS土佐の総合案内でこの画面をスタッフにお見せください。<br>20歳以上の方に限ります（身分証明書をお持ちください）。<br>引換期限：<span id="deadline"></span>／景品の残り：<span id="remaining"></span>個</p>
+      <div id="staffBox">
+        <details>
+          <summary>スタッフ用：交換済みにする</summary>
+          <p class="muted" style="margin:6px 0 0">お客様が選んだセット</p>
+          <div class="setpick" id="setPick"></div>
+          <label for="pin">スタッフ暗証番号</label>
+          <input id="pin" type="password" inputmode="numeric" autocomplete="off">
+          <button type="button" id="redeemBtn">交換済みにする</button>
+          <p class="muted" id="redeemMsg"></p>
+        </details>
+      </div>
+    </section>
 
     <section class="card">
       <h2>あなたのスタンプ</h2>
@@ -142,28 +163,15 @@
       <div id="shopList"></div>
     </section>
 
-    <section class="card prize hidden" id="prizeCard">
-      <h2>景品引換番号</h2>
-      <div class="code" id="prizeCode">----</div>
-      <div id="prizeState"></div>
-      <p class="muted">BTS土佐の総合案内でこの画面をスタッフにお見せください。<br>20歳以上の方に限ります（身分証明書をお持ちください）。<br>引換期限：<span id="deadline"></span>／景品の残り：<span id="remaining"></span>個</p>
-      <div id="staffBox">
-        <details>
-          <summary>スタッフ用：交換済みにする</summary>
-          <p class="muted" style="margin:6px 0 0">お客様が選んだセット</p>
-          <div class="setpick" id="setPick"></div>
-          <label for="pin">スタッフ暗証番号</label>
-          <input id="pin" type="password" inputmode="numeric" autocomplete="off">
-          <button type="button" id="redeemBtn">交換済みにする</button>
-          <p class="muted" id="redeemMsg"></p>
-        </details>
-      </div>
-    </section>
-
     <section class="card">
       <h2>スタンプの履歴</h2>
       <ul class="hist" id="history"></ul>
     </section>
+
+    <div class="trivia" id="triviaBox">
+      <div class="lbl">ボートレース豆知識</div>
+      <p id="triviaText"></p>
+    </div>
 
     <section class="card">
       <details>
@@ -421,7 +429,11 @@
       $('banner').innerHTML = '<div class="banner warn">エラーが発生しました<small>時間をおいて、もう一度お試しください。</small></div>';
       return;
     }
-    $('eventName').textContent = s.eventName;
+    /* 11/27 イベント名は全角スペースの前後で2行に分けて表示（分けられなければ1行） */
+    var en = String(s.eventName || '').split(/[　 ]+/);
+    $('eventName').innerHTML = en.length >= 2
+      ? '<span class="t1">' + esc(en[0]) + '</span><span class="t2">' + esc(en.slice(1).join(' ').replace(/^QR/, 'ＱＲ')) + '</span>'
+      : '<span class="t2">' + esc(s.eventName || '') + '</span>';
     if (s.trivia) $('triviaText').textContent = s.trivia; else showTrivia();
     lastRemain = String(s.prizeRemaining);
     renderPrize(s.prize);
